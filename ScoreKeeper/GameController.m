@@ -7,16 +7,19 @@
 //
 
 #import "GameController.h"
+#import "Stack.h"
+#import "Players.h"
+#import "Game.h"
 
 @interface GameController ()
 
-@property (nonatomic, strong) NSArray *games;
+@property (nonatomic, strong) NSArray *players;
 
 @end
 
-static NSString * const gameNameKey = @"gameName";
-static NSString * const playersKey = @"players";
-static NSString * const gamesKey = @"game";
+
+static NSString * const playersKey = @"Players";
+static NSString * const gamesKey = @"Game";
 
 @implementation GameController
 
@@ -26,91 +29,71 @@ static NSString * const gamesKey = @"game";
     dispatch_once(&onceToken, ^{
         sharedInstance = [[GameController alloc] init];
         
-        [sharedInstance loadFromDefaults];
     });
     return sharedInstance;
 }
 
-- (void)addGame:(Game *)game {
+- (NSArray *)games {
     
-    if (!game) {
-        return;
-    }
+    NSFetchRequest *fetchRequest = [NSFetchRequest fetchRequestWithEntityName:@"Game"];
     
-    NSMutableArray *mutableGames = [[NSMutableArray alloc] initWithArray:self.games];
-    [mutableGames addObject:game];
+    NSArray *objects = [[Stack sharedInstance].managedObjectContext executeFetchRequest:fetchRequest error:NULL];
     
-    self.games = mutableGames;
-    [self saveToDefaults];
+    return objects;
+}
+
+- (void)addGameWithTitle:(NSString *)title {
+    
+    Game *newGame = [NSEntityDescription insertNewObjectForEntityForName:@"Game" inManagedObjectContext:[Stack sharedInstance].managedObjectContext];
+    
+    
+    newGame.title = title;
+    
+    [self synchronize];
+    
+}
+
+- (Players *)createPlayerWithName:(NSString *)name {
+    
+    Players *player = [NSEntityDescription insertNewObjectForEntityForName:@"Player" inManagedObjectContext:[Stack sharedInstance].managedObjectContext];
+    
+    return player;
+}
+
+- (void)addPlayerToGame:(Game *)game {
+    Players *player = [NSEntityDescription insertNewObjectForEntityForName:playersKey inManagedObjectContext:[Stack sharedInstance].managedObjectContext];
+    [player setGame:game];
+    [self synchronize];
+}
+
+- (void)removePlayer:(Players *)player {
+    
+    [player.managedObjectContext deleteObject:player];
+    
+    [self synchronize];
 }
 
 - (void)removeGame:(Game *)game {
     
-    if (!game) {
-        return;
-    }
+    [[Stack sharedInstance].managedObjectContext deleteObject:game];
     
-    NSMutableArray *mutableGames = [[NSMutableArray alloc] initWithArray:self.games];
-    [mutableGames removeObject:game];
-    self.games = mutableGames;
-    
-    [self saveToDefaults];
+    [self synchronize];
 }
 
-- (void)replaceGame:(Game *)oldGame withGame:(Game *)newGame {
+- (void)synchronize {
     
-    if (!oldGame || !newGame) {
-        return;
-    }
-    
-    NSMutableArray *mutableGames = [[NSMutableArray alloc] initWithArray:self.games];
-    
-    if ([mutableGames containsObject:oldGame]) {
-        
-        NSUInteger index = [mutableGames indexOfObject:oldGame];
-        [mutableGames replaceObjectAtIndex:index withObject:newGame];
-    }
-    
-    self.games = mutableGames;
-    [self saveToDefaults];
+    [[Stack sharedInstance].managedObjectContext save:NULL];
 }
-
-- (void)loadFromDefaults {
-    
-    NSArray *gameDictionaries = [[NSUserDefaults standardUserDefaults] objectForKey:gamesKey];
-    
-    NSMutableArray *games = [[NSMutableArray alloc] init];
-    
-    for (NSDictionary *dictionary in gameDictionaries) {
-        [games addObject:[[Game alloc] initWithDictionary:dictionary]];
-    }
-    
-    self.games = games;
-}
-
-- (void)saveToDefaults {
-    
-    NSMutableArray *gameDictionaries = [[NSMutableArray alloc] init];
-    
-    for (Game *game in self.games) {
-
-        NSDictionary *dictionary = [game gameDictionary];
-        [gameDictionaries addObject:dictionary];
-    }
-    
-    [[NSUserDefaults standardUserDefaults] setObject:gameDictionaries forKey:gamesKey];
-    [[NSUserDefaults standardUserDefaults] synchronize];
-}
-
-- (void)moveFromIndex:(NSInteger)oldIndex toNewIndex:(NSInteger)newIndex {
-    
-    NSMutableArray *mutableGames = [[NSMutableArray alloc] initWithArray:self.games];
-    Game *game = [mutableGames objectAtIndex:oldIndex];
-    [mutableGames removeObject:game];
-    [mutableGames insertObject:game atIndex:newIndex];
-    
-    self.games = mutableGames;
-    [self saveToDefaults];
-}
+//
+//- (void)moveFromIndex:(NSInteger)oldIndex toNewIndex:(NSInteger)newIndex {
+//    
+//    NSMutableArray *mutableGames = [[NSMutableArray alloc] initWithArray:self.games];
+//    Game *game = [mutableGames objectAtIndex:oldIndex];
+//    [mutableGames removeObject:game];
+//    [mutableGames insertObject:game atIndex:newIndex];
+//    
+//    self.games = mutableGames;
+//    [self saveToDefaults];
+//}
 
 @end

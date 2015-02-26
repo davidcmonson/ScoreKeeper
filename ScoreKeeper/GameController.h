@@ -13,11 +13,16 @@
 
 @property (nonatomic, strong, readonly) NSArray *games;
 
+@property (nonatomic, strong, readonly) NSArray *players;
+
 + (GameController *)sharedInstance;
 
-- (void)addGame:(Game *)game;
+- (void)addGameWithTitle:(NSString *)title;
 - (void)removeGame:(Game *)game;
-- (void)replaceGame:(Game *)oldGame withGame:(Game *)newGame;
-- (void)moveFromIndex:(NSInteger)oldIndex toNewIndex:(NSInteger)newIndex;
+- (void)synchronize;
+- (void)removePlayer:(Players *)player;
+- (void)addPlayerToGame:(Game *)game;
+- (Players *)createPlayerWithName:(NSString *)name;
+
 
 @end

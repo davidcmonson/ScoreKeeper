@@ -13,7 +13,7 @@
 @interface Players : NSManagedObject
 
 @property (nonatomic, retain) NSString * name;
-@property (nonatomic, retain) NSString * score;
+@property (nonatomic, retain) NSNumber * score;
 @property (nonatomic, retain) NSManagedObject *game;
 
 @end
